@@ -1,0 +1,295 @@
+program LDC
+  implicit none
+
+  ! Declaring variables and parameters
+  integer, parameter :: n=32
+  real,parameter :: Re=100
+  real,parameter:: dt = 0.003125
+  real,parameter:: tol_p = 10**(-5)
+  real,parameter:: tol_vel = 10**(-8)
+  real,parameter::U_lid=1.0
+
+  integer:: iter=0
+  integer:: iter_p=0
+  integer::i,j
+  real::dx=1/real(n)
+  real::dy=1/real(n)
+  real::time=0
+
+  real::avgL2_u=10**5
+  real::avgL2_v=10**5
+  real::avgL2_p=10**5
+
+  real,dimension(:,:),allocatable::u, u_old, u_temp
+  real,dimension(:,:),allocatable::v, v_old, v_temp
+  real,dimension(:,:),allocatable::p,res
+
+  real::ae, aw, an, as, ap
+  real::ue, uw, un, us, up
+  real::ve, vw, vn, vs, vp
+  real::Adv, Dif, S
+  real::omega=1.0
+
+  real::u_p(n,n),v_p(n,n)
+  do i=1,n
+    do j=1,n
+      u_p(i,j)=0
+      v_p(i,j)=0
+    end do
+  end do
+
+  ! Allocating space to velocity and pressure matrices
+  allocate(u(n+2,n+1), u_old(n+2,n+1), u_temp(n+2,n+1),&
+           v(n+1,n+2), v_old(n+1,n+2), v_temp(n+1,n+2),&
+           p(n+2,n+2),res(n+2,n+2))
+
+  ! Initializing pressure and vellocity matrices
+  do i=1,n+2
+    do j=1,n+2
+      p(i,j)=0;
+    end do
+  end do
+
+  do i=1,n+2
+    do j=1,n+1
+      u(i,j)=0
+      u_old(i,j)=0
+      u_temp(i,j)=0
+    end do
+  end do
+
+  do i=1,n+1
+    do j=1,n+2
+      v(i,j)=0
+      v_old(i,j)=0
+      v_temp(i,j)=0
+    end do
+  end do
+open(4, file='normfile.dat', status='unknown')
+  ! Iterating in time
+  do  while(avgL2_u .gt. 0.00000001 .or. avgL2_v .gt. 0.00000001)
+    ! Updating boundary conditions
+
+    do j=1,n+2
+       v(n+1,j)=0
+       v(1,j)=0
+    end do
+    do i=1,n+1
+        v(i,1) = -v(i,2)
+        v(i,n+2) = -v(i,n+1)
+    end do
+    do i=1,n+2
+       u(i,1)=0
+       u(i,n+1)=0
+    end do
+    do j=1,n+1
+        u(1,j) = -u(2,j)
+        u(n+2,j) = 2*U_lid - u(n+1,j);
+    end do
+
+
+    if (iter .eq. 0) then
+        do i=2,n+1
+            do j=2,n
+                ue = (u(i,j) + u(i,j+1))/2
+                uw = (u(i,j) + u(i,j-1))/2
+                us = (u(i,j) + u(i-1,j))/2
+                un = (u(i,j) + u(i+1,j))/2
+                vn = (v(i,j) + v(i,j+1))/2
+                vs = (v(i-1,j) + v(i-1,j+1))/2
+
+                Adv =  -(ue*ue - uw*uw)/dx - (un*vn - us*vs)/dy
+                Dif = (u(i+1,j)-2*u(i,j)+u(i-1,j))/(dy*dy*Re) +&
+                    (u(i,j+1)-2*u(i,j)+u(i,j-1))/(dx*dx*Re)
+
+                u_temp(i,j) = u(i,j) + dt*Adv + dt*Dif
+            end do
+        end do
+        do i=2,n
+            do j=2,n+1
+                ve = (v(i,j) + v(i,j+1))/2
+                vw = (v(i,j) + v(i,j-1))/2
+                ue = (u(i+1,j) + u(i,j))/2
+                uw = (u(i+1,j-1) + u(i,j-1))/2
+                vn = (v(i+1,j) + v(i,j))/2
+                vs = (v(i-1,j) + v(i,j))/2
+                Adv = -(vn*vn - vs*vs)/dy - (ve*ue - vw*uw)/dx
+                Dif = (v(i+1,j)-2*v(i,j)+v(i-1,j))/(dy*dy*Re) + &
+                    (v(i,j+1)-2*v(i,j)+v(i,j-1))/(dx*dx*Re)
+
+                v_temp(i,j) = v(i,j) + dt*Adv + dt*Dif
+
+            end do
+        end do
+        !print *, v_temp
+    else
+        do i=2,n+1
+            do j=2,n
+                ue = (u(i,j) + u(i,j+1))/2
+                uw = (u(i,j) + u(i,j-1))/2
+                us = (u(i,j) + u(i-1,j))/2
+                un = (u(i,j) + u(i+1,j))/2
+                vn = (v(i,j) + v(i,j+1))/2
+                vs = (v(i-1,j) + v(i-1,j+1))/2
+                Adv = -(ue*ue - uw*uw)/dx - (un*vn - us*vs)/dy;
+                Dif = (u(i+1,j)-2*u(i,j)+u(i-1,j))/(dy*dy*Re) + &
+                    (u(i,j+1)-2*u(i,j)+u(i,j-1))/(dx*dx*Re)
+
+                u_temp(i,j) = u(i,j) + (3/2)*dt*Adv + (3/2)*dt*Dif
+            end do
+        end do
+        do i=2,n+1
+            do j=2,n
+                ue = (u_old(i,j) + u_old(i,j+1))/2
+                uw = (u_old(i,j) + u_old(i,j-1))/2
+                us = (u_old(i,j) + u_old(i-1,j))/2
+                un = (u_old(i,j) + u_old(i+1,j))/2
+                vn = (v_old(i,j) + v_old(i,j+1))/2
+                vs = (v_old(i-1,j) + v_old(i-1,j+1))/2
+                Adv = -(ue*ue - uw*uw)/dx - (un*vn - us*vs)/dy
+                Dif = (u_old(i+1,j)-2*u_old(i,j)+u_old(i-1,j))/(dy*dy*Re) + &
+                (u_old(i,j+1)-2*u_old(i,j)+u_old(i,j-1))/(dx*dx*Re)
+
+                u_temp(i,j) = u_temp(i,j) - (1/2)*dt*Adv - (1/2)*dt*Dif
+            end do
+        end do
+
+        do i=2,n
+            do j=2,n+1
+                ve = (v(i,j) + v(i,j+1))/2
+                vw = (v(i,j) + v(i,j-1))/2
+                ue = (u(i+1,j) + u(i,j))/2
+                uw = (u(i+1,j-1) + u(i,j-1))/2
+                vn = (v(i+1,j) + v(i,j))/2
+                vs = (v(i-1,j) + v(i,j))/2
+                Adv = -(vn*vn - vs*vs)/dy - (ve*ue - vw*uw)/dx
+                Dif = (v(i+1,j)-2*v(i,j)+v(i-1,j))/(dy*dy*Re) + &
+                    (v(i,j+1)-2*v(i,j)+v(i,j-1))/(dx*dx*Re)
+
+                v_temp(i,j) = v(i,j) + (3/2)*dt*Adv + (3/2)*dt*Dif
+            end do
+        end do
+        do i=2,n
+            do j=2,n+1
+                ve = (v_old(i,j) + v_old(i,j+1))/2
+                vw = (v_old(i,j) + v_old(i,j-1))/2
+                ue = (u_old(i+1,j) + u_old(i,j))/2
+                uw = (u_old(i+1,j-1) + u_old(i,j-1))/2
+                vn = (v_old(i+1,j) + v_old(i,j))/2
+                vs = (v_old(i-1,j) + v_old(i,j))/2
+                Adv = -(vn*vn - vs*vs)/dy - (ve*ue - vw*uw)/dx
+                Dif = (v_old(i+1,j)-2*v_old(i,j)+v_old(i-1,j))/(dy*dy*Re) +&
+                    (v_old(i,j+1)-2*v_old(i,j)+v_old(i,j-1))/(dx*dx*Re)
+
+                v_temp(i,j) = v_temp(i,j) - (1/2)*dt*Adv - (1/2)*dt*Dif
+            end do
+        end do
+    end if
+    ! Pressure Poisson Equation
+    avgL2_p = 10000.0
+    do while (avgL2_p .gt. 0.00001)
+
+        do i=2,n+1
+            do j=2,n+1
+              ae = -dt*dy/dx
+              aw=ae
+              an= -dt*dx/dy
+              as=an
+              ap = -(ae+aw+an+as)
+
+              S=(u_temp(i,j-1)-u_temp(i,j))*dy + (v_temp(i-1,j)-v_temp(i,j))*dx
+              p(i,j) = (-ae*p(i,j+1)-aw*p(i,j-1)-an*p(i+1,j)-as*p(i-1,j)+S)/ap
+            end do
+        end do
+        ! Pressure boundary conditions
+        do i=2,n+1
+            p(i,1) = p(i,2)
+            p(i,n+2) = p(i,n+1)
+        end do
+        do j=2,n+1
+            p(1,j) = p(2,j)
+            p(n+2,j) = p(n+1,j)
+        end do
+        ! Avg L2 norm
+        avgL2_p = 0
+        do i=2,n+1
+            do j=2,n+1
+              ae = -dt*dy/dx
+              aw=ae
+              an= -dt*dx/dy
+              as=an
+              ap = -(ae+aw+an+as)
+              S = (u_temp(i,j-1)-u_temp(i,j))*dy + (v_temp(i-1,j)-v_temp(i,j))*dx
+              res(i,j) = S-ap*p(i,j)-ae*p(i,j+1)-aw*p(i,j-1)-an*p(i+1,j)-as*p(i-1,j)
+              avgL2_p = avgL2_p + res(i,j)*res(i,j)
+            end do
+        end do
+        avgL2_p = sqrt(avgL2_p/(n*n))
+        iter_p=iter_p+1
+    end do
+
+
+    ! corrected velocity
+    do i=2,n+1
+        do j=2,n
+            u(i,j) = u_temp(i,j) -(p(i,j+1)-p(i,j))*(dt/dx)
+        end do
+    end do
+    do i=2,n
+        do j=2,n+1
+            v(i,j) = v_temp(i,j)-(p(i+1,j)-p(i,j))*(dt/dy)
+        end do
+    end do
+    ! AvgL2 norm for u and v velocity
+    avgL2_u=0
+    do i=2,n+1
+        do j=1,n+1
+            avgL2_u = avgL2_u + (u(i,j)-u_old(i,j))*(u(i,j)-u_old(i,j))
+        end do
+    end do
+    avgL2_u = sqrt(avgL2_u/((n+1)*n))
+
+    avgL2_v=0
+    do i=1,n+1
+        do j=2,n+1
+            avgL2_v = avgL2_v + (v(i,j)-v_old(i,j))*(v(i,j)-v_old(i,j))
+        end do
+    end do
+    avgL2_v = sqrt(avgL2_v/((n+1)*n))
+
+    ! updating old velocities
+    do i=1,n+2
+        do j=1,n+1
+            u_old(i,j) = u(i,j)
+        end do
+    end do
+    do i=1,n+1
+        do j=1,n+2
+            v_old(i,j) = v(i,j)
+        end do
+    end do
+    time = time + dt
+    iter = iter+1;
+write(4 ,* ) time ,iter ,avgL2_u, avgL2_v
+    print*,time, iter, avgL2_u, avgL2_v
+
+  end do
+close(8)
+  open(1, file='u_vel.dat', status='unknown')
+  do i = 1,n+2
+      write(1 ,* ) (u(i,j), j=1,n+1)
+    end do
+  close(1)
+
+  open(2, file='v_vel.dat', status='unknown')
+   do i = 1,n+1
+       write(2 ,* ) (v(i,j) , j=1,n+2)
+   end do
+   close(2)
+
+   open(3, file='p.dat', status='unknown')
+    do i=1,n+2
+      write(3 ,* ) (p(i,j), j=1,n+2)
+    end do
+    close(3)
+end program LDC
