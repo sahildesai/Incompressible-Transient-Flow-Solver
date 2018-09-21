@@ -1,0 +1,9 @@
+Simulations are ran for the following cases:
+
+Re=100
+N=32x32 dt=3.125e-3, 6.23e-3, 0.0125
+N=64x64 dt=5e-4, 1e-3, 3e-3
+N=128x128 dt=1.25e-4, 2.5e-4, 5e-4
+
+Re=1000
+N=32x32 dt=3.125e-3
