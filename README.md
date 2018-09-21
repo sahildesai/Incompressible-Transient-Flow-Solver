@@ -1,6 +1,5 @@
 # Lid Driven Cavity
 
-#Abstract:
 The 2D square Lid Driven Cavity provides an excellent benchmark for testing basic laminar incompressible
 flow solvers. A finite volume code has been written to solve a 2D lid-driven cavity filled with a liquid having an
 infinite lid moving with a given velocity. A staggered grid has been used for finite volume discretization with
