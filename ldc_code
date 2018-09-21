@@ -1,3 +1,11 @@
+!This is the main code of the final project in the course Numerical Methods
+!for Fluid Flows and Heat Transfer.
+!The code simulates a 2D Lid Driven Cavity Problem.
+!The complete code is written by Sahil Desai (2015A1PS0768P).
+!Detailed comments have been inserted throughout the code which should be
+!treated as documentation for the code methodology. Further code
+!explanations in the project report.
+
 program LDC
   implicit none
 
