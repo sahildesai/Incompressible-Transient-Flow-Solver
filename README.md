@@ -12,7 +12,7 @@ compared with the original research paper for the proposed benchmark (Ghia, 1982
 improved algorithm has been suggested based on the trend of observed error results which has a potential for
 further solution time speed-up.
 
-A computer program to solve the set of equations and obtain a solution. 
+A computer program has been written to solve the set of equations and obtain a solution. 
 For each case, the initial field is set to be zero. Integration in time 
 is done till a steady state solution is reached. At each time step the 
 pressure equation average 𝐿2 norm should be converged to a residue of 
