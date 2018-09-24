@@ -51,7 +51,7 @@ program LDC
            v(n+1,n+2), v_old(n+1,n+2), v_temp(n+1,n+2),&
            p(n+2,n+2),res(n+2,n+2))
 
-  ! Initializing pressure and vellocity matrices
+  ! Initializing pressure and velocity matrices
   do i=1,n+2
     do j=1,n+2
       p(i,j)=0;
@@ -97,101 +97,10 @@ open(4, file='normfile.dat', status='unknown')
 
 
     if (iter .eq. 0) then
-        do i=2,n+1
-            do j=2,n
-                ue = (u(i,j) + u(i,j+1))/2
-                uw = (u(i,j) + u(i,j-1))/2
-                us = (u(i,j) + u(i-1,j))/2
-                un = (u(i,j) + u(i+1,j))/2
-                vn = (v(i,j) + v(i,j+1))/2
-                vs = (v(i-1,j) + v(i-1,j+1))/2
-
-                Adv =  -(ue*ue - uw*uw)/dx - (un*vn - us*vs)/dy
-                Dif = (u(i+1,j)-2*u(i,j)+u(i-1,j))/(dy*dy*Re) +&
-                    (u(i,j+1)-2*u(i,j)+u(i,j-1))/(dx*dx*Re)
-
-                u_temp(i,j) = u(i,j) + dt*Adv + dt*Dif
-            end do
-        end do
-        do i=2,n
-            do j=2,n+1
-                ve = (v(i,j) + v(i,j+1))/2
-                vw = (v(i,j) + v(i,j-1))/2
-                ue = (u(i+1,j) + u(i,j))/2
-                uw = (u(i+1,j-1) + u(i,j-1))/2
-                vn = (v(i+1,j) + v(i,j))/2
-                vs = (v(i-1,j) + v(i,j))/2
-                Adv = -(vn*vn - vs*vs)/dy - (ve*ue - vw*uw)/dx
-                Dif = (v(i+1,j)-2*v(i,j)+v(i-1,j))/(dy*dy*Re) + &
-                    (v(i,j+1)-2*v(i,j)+v(i,j-1))/(dx*dx*Re)
-
-                v_temp(i,j) = v(i,j) + dt*Adv + dt*Dif
-
-            end do
-        end do
-        !print *, v_temp
+        call euler_explicit(Re,n,dt,u,v,u_temp,v_temp)
+		
     else
-        do i=2,n+1
-            do j=2,n
-                ue = (u(i,j) + u(i,j+1))/2
-                uw = (u(i,j) + u(i,j-1))/2
-                us = (u(i,j) + u(i-1,j))/2
-                un = (u(i,j) + u(i+1,j))/2
-                vn = (v(i,j) + v(i,j+1))/2
-                vs = (v(i-1,j) + v(i-1,j+1))/2
-                Adv = -(ue*ue - uw*uw)/dx - (un*vn - us*vs)/dy;
-                Dif = (u(i+1,j)-2*u(i,j)+u(i-1,j))/(dy*dy*Re) + &
-                    (u(i,j+1)-2*u(i,j)+u(i,j-1))/(dx*dx*Re)
-
-                u_temp(i,j) = u(i,j) + (3/2)*dt*Adv + (3/2)*dt*Dif
-            end do
-        end do
-        do i=2,n+1
-            do j=2,n
-                ue = (u_old(i,j) + u_old(i,j+1))/2
-                uw = (u_old(i,j) + u_old(i,j-1))/2
-                us = (u_old(i,j) + u_old(i-1,j))/2
-                un = (u_old(i,j) + u_old(i+1,j))/2
-                vn = (v_old(i,j) + v_old(i,j+1))/2
-                vs = (v_old(i-1,j) + v_old(i-1,j+1))/2
-                Adv = -(ue*ue - uw*uw)/dx - (un*vn - us*vs)/dy
-                Dif = (u_old(i+1,j)-2*u_old(i,j)+u_old(i-1,j))/(dy*dy*Re) + &
-                (u_old(i,j+1)-2*u_old(i,j)+u_old(i,j-1))/(dx*dx*Re)
-
-                u_temp(i,j) = u_temp(i,j) - (1/2)*dt*Adv - (1/2)*dt*Dif
-            end do
-        end do
-
-        do i=2,n
-            do j=2,n+1
-                ve = (v(i,j) + v(i,j+1))/2
-                vw = (v(i,j) + v(i,j-1))/2
-                ue = (u(i+1,j) + u(i,j))/2
-                uw = (u(i+1,j-1) + u(i,j-1))/2
-                vn = (v(i+1,j) + v(i,j))/2
-                vs = (v(i-1,j) + v(i,j))/2
-                Adv = -(vn*vn - vs*vs)/dy - (ve*ue - vw*uw)/dx
-                Dif = (v(i+1,j)-2*v(i,j)+v(i-1,j))/(dy*dy*Re) + &
-                    (v(i,j+1)-2*v(i,j)+v(i,j-1))/(dx*dx*Re)
-
-                v_temp(i,j) = v(i,j) + (3/2)*dt*Adv + (3/2)*dt*Dif
-            end do
-        end do
-        do i=2,n
-            do j=2,n+1
-                ve = (v_old(i,j) + v_old(i,j+1))/2
-                vw = (v_old(i,j) + v_old(i,j-1))/2
-                ue = (u_old(i+1,j) + u_old(i,j))/2
-                uw = (u_old(i+1,j-1) + u_old(i,j-1))/2
-                vn = (v_old(i+1,j) + v_old(i,j))/2
-                vs = (v_old(i-1,j) + v_old(i,j))/2
-                Adv = -(vn*vn - vs*vs)/dy - (ve*ue - vw*uw)/dx
-                Dif = (v_old(i+1,j)-2*v_old(i,j)+v_old(i-1,j))/(dy*dy*Re) +&
-                    (v_old(i,j+1)-2*v_old(i,j)+v_old(i,j-1))/(dx*dx*Re)
-
-                v_temp(i,j) = v_temp(i,j) - (1/2)*dt*Adv - (1/2)*dt*Dif
-            end do
-        end do
+       call adams_bashforth(Re,n,dt,u,v,u_temp,v_temp)
     end if
     ! Pressure Poisson Equation
     avgL2_p = 10000.0
@@ -301,3 +210,139 @@ close(8)
     end do
     close(3)
 end program LDC
+
+
+! Subroutine to calculate velocities using Euler-Explicit for first time step
+subroutine euler_explicit(Re,n,dt,u,v,u_temp,v_temp)
+implicit none
+ 
+  integer, parameter :: n=32
+  real,parameter :: Re=100
+  real,parameter:: dt = 0.003125
+  
+  real::dx=1/real(n)
+  real::dy=1/real(n)
+  
+  real,dimension(:,:)::u(n+2,n+1), u_old(n+2,n+1), u_temp(n+2,n+1)
+  real,dimension(:,:)::v(n+1,n+2), v_old(n+1,n+2), v_temp(n+1,n+2)
+
+  real::ue, uw, un, us, up
+  real::ve, vw, vn, vs, vp
+  real::Adv, Dif, S  
+  
+  do i=2,n+1
+            do j=2,n
+                ue = (u(i,j) + u(i,j+1))/2
+                uw = (u(i,j) + u(i,j-1))/2
+                us = (u(i,j) + u(i-1,j))/2
+                un = (u(i,j) + u(i+1,j))/2
+                vn = (v(i,j) + v(i,j+1))/2
+                vs = (v(i-1,j) + v(i-1,j+1))/2
+
+                Adv =  -(ue*ue - uw*uw)/dx - (un*vn - us*vs)/dy
+                Dif = (u(i+1,j)-2*u(i,j)+u(i-1,j))/(dy*dy*Re) +&
+                    (u(i,j+1)-2*u(i,j)+u(i,j-1))/(dx*dx*Re)
+
+                u_temp(i,j) = u(i,j) + dt*Adv + dt*Dif
+            end do
+        end do
+        do i=2,n
+            do j=2,n+1
+                ve = (v(i,j) + v(i,j+1))/2
+                vw = (v(i,j) + v(i,j-1))/2
+                ue = (u(i+1,j) + u(i,j))/2
+                uw = (u(i+1,j-1) + u(i,j-1))/2
+                vn = (v(i+1,j) + v(i,j))/2
+                vs = (v(i-1,j) + v(i,j))/2
+                Adv = -(vn*vn - vs*vs)/dy - (ve*ue - vw*uw)/dx
+                Dif = (v(i+1,j)-2*v(i,j)+v(i-1,j))/(dy*dy*Re) + &
+                    (v(i,j+1)-2*v(i,j)+v(i,j-1))/(dx*dx*Re)
+
+                v_temp(i,j) = v(i,j) + dt*Adv + dt*Dif
+
+            end do
+        end do
+end subroutine euler_explicit
+
+
+
+! Subroutine to calculate velocities using Second order Adams-Bashforth method
+subroutine adams_bashforth(Re,n,dt,u,v,u_temp,v_temp)
+implicit none
+ 
+  integer, parameter :: n=32
+  real,parameter :: Re=100
+  real,parameter:: dt = 0.003125
+  
+  real::dx=1/real(n)
+  real::dy=1/real(n)
+  
+  real,dimension(:,:)::u(n+2,n+1), u_old(n+2,n+1), u_temp(n+2,n+1)
+  real,dimension(:,:)::v(n+1,n+2), v_old(n+1,n+2), v_temp(n+1,n+2)
+
+  real::ue, uw, un, us, up
+  real::ve, vw, vn, vs, vp
+  real::Adv, Dif, S
+ 
+ do i=2,n+1
+            do j=2,n
+                ue = (u(i,j) + u(i,j+1))/2
+                uw = (u(i,j) + u(i,j-1))/2
+                us = (u(i,j) + u(i-1,j))/2
+                un = (u(i,j) + u(i+1,j))/2
+                vn = (v(i,j) + v(i,j+1))/2
+                vs = (v(i-1,j) + v(i-1,j+1))/2
+                Adv = -(ue*ue - uw*uw)/dx - (un*vn - us*vs)/dy;
+                Dif = (u(i+1,j)-2*u(i,j)+u(i-1,j))/(dy*dy*Re) + &
+                    (u(i,j+1)-2*u(i,j)+u(i,j-1))/(dx*dx*Re)
+
+                u_temp(i,j) = u(i,j) + (3/2)*dt*Adv + (3/2)*dt*Dif
+            end do
+        end do
+        do i=2,n+1
+            do j=2,n
+                ue = (u_old(i,j) + u_old(i,j+1))/2
+                uw = (u_old(i,j) + u_old(i,j-1))/2
+                us = (u_old(i,j) + u_old(i-1,j))/2
+                un = (u_old(i,j) + u_old(i+1,j))/2
+                vn = (v_old(i,j) + v_old(i,j+1))/2
+                vs = (v_old(i-1,j) + v_old(i-1,j+1))/2
+                Adv = -(ue*ue - uw*uw)/dx - (un*vn - us*vs)/dy
+                Dif = (u_old(i+1,j)-2*u_old(i,j)+u_old(i-1,j))/(dy*dy*Re) + &
+                (u_old(i,j+1)-2*u_old(i,j)+u_old(i,j-1))/(dx*dx*Re)
+
+                u_temp(i,j) = u_temp(i,j) - (1/2)*dt*Adv - (1/2)*dt*Dif
+            end do
+        end do
+
+        do i=2,n
+            do j=2,n+1
+                ve = (v(i,j) + v(i,j+1))/2
+                vw = (v(i,j) + v(i,j-1))/2
+                ue = (u(i+1,j) + u(i,j))/2
+                uw = (u(i+1,j-1) + u(i,j-1))/2
+                vn = (v(i+1,j) + v(i,j))/2
+                vs = (v(i-1,j) + v(i,j))/2
+                Adv = -(vn*vn - vs*vs)/dy - (ve*ue - vw*uw)/dx
+                Dif = (v(i+1,j)-2*v(i,j)+v(i-1,j))/(dy*dy*Re) + &
+                    (v(i,j+1)-2*v(i,j)+v(i,j-1))/(dx*dx*Re)
+
+                v_temp(i,j) = v(i,j) + (3/2)*dt*Adv + (3/2)*dt*Dif
+            end do
+        end do
+        do i=2,n
+            do j=2,n+1
+                ve = (v_old(i,j) + v_old(i,j+1))/2
+                vw = (v_old(i,j) + v_old(i,j-1))/2
+                ue = (u_old(i+1,j) + u_old(i,j))/2
+                uw = (u_old(i+1,j-1) + u_old(i,j-1))/2
+                vn = (v_old(i+1,j) + v_old(i,j))/2
+                vs = (v_old(i-1,j) + v_old(i,j))/2
+                Adv = -(vn*vn - vs*vs)/dy - (ve*ue - vw*uw)/dx
+                Dif = (v_old(i+1,j)-2*v_old(i,j)+v_old(i-1,j))/(dy*dy*Re) +&
+                    (v_old(i,j+1)-2*v_old(i,j)+v_old(i,j-1))/(dx*dx*Re)
+
+                v_temp(i,j) = v_temp(i,j) - (1/2)*dt*Adv - (1/2)*dt*Dif
+            end do
+        end do
+end subroutine adams_bashforth
